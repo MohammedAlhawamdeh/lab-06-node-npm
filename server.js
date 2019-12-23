@@ -17,6 +17,7 @@ require('dotenv').config();
 const PORT = process.env.PORT || 3000;
 const GEOCODE_API_KEY = process.env.GEOCODE_API_KEY;
 const DARKSKY_API_KEY = process.env.DARKSKY_API_KEY;
+const EVENTFUL_APP_KEY = process.env.EVENTFUL_APP_KEY;
 
 
 // Make the app listening
@@ -33,7 +34,7 @@ server.get('/', (request, response) => {
     "formatted_query": "lynood,... ,WA, USA",
     "latitude": "47.606210",
     "longitude": "-122.332071"
-  }
+}
 */
 
 
@@ -46,23 +47,24 @@ function Location(city, locationData) {
     this.search_query = city;
 }
 
+
 function locationHandler(request, response) {
     // Read the city from the user (request) and respond
     let city = request.query['city'];
     getLocationData(city)
-        .then((data) => {
-            response.status(200).send(data);
-        });
+    .then((data) => {
+        response.status(200).send(data);
+    });
 }
 function getLocationData(city) {
     const url = `https://us1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&q=${city}&format=json&limit=1`;
-
+    
     // Superagent
     return superagent.get(url)
-        .then((data) => {
-            let location = new Location(city, data.body);
-            return location;
-        });
+    .then((data) => {
+        let location = new Location(city, data.body);
+        return location;
+    });
 }
 
 
@@ -74,25 +76,29 @@ function Weather(day) {
     this.forecast = day.summary;
 }
 
+
+
 function weatherHandler(request, response) {
     let lat = request.query['latitude'];
     let lng = request.query['longitude'];
     getWeatherData(lat, lng)
-        .then((data) => {
-            response.status(200).send(data);
-        });
-
+    .then((data) => {
+        response.status(200).send(data);
+    });
+    
 }
+
 
 function getWeatherData(lat, lng) {
     const url = `https://api.darksky.net/forecast/${DARKSKY_API_KEY}/${lat},${lng}`;
     return superagent.get(url)
-        .then((weatherData) => {
-            console.log(weatherData.body.daily.data);
-            let weather = weatherData.body.daily.data.map((day) => new Weather(day));
+    .then((weatherData) => {
+        console.log(weatherData.body.daily.data);
+        let weather = weatherData.body.daily.data.map((day) => new Weather(day));
             return weather;
         });
-}
+    }
+    
 
 
 
@@ -105,3 +111,26 @@ server.use((error, request, response) => {
 });
 
 
+
+
+const Event = function(link, name, event_date, summary) {
+    this.link = link;
+    this.name = name;
+    this.event_date = event_date;
+    this.summary = summary;
+  };
+
+  app.get('/events/', (request, response) => {
+      
+      function getEventData(lat, lng) {
+      let city = formatted_query['city'];
+      let url = `http://api.eventful.com/json/events/search?app_key=${EVENTFUL_APP_KEY}&location=formatted_query${city}`;
+  
+      return superagent.get(url)
+        .then((eventData) => {
+            console.log(eventData.body.daily.data);
+            let event = eventData.body.daily.data.map((city) => new Event(city));
+                return event;
+            });
+        }
+      
