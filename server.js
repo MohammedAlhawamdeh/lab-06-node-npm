@@ -2,6 +2,8 @@
 // Express
 const express = require('express');
 
+const superagent = require('superagent');
+
 // initialize a server
 const server = express();
 
@@ -13,6 +15,9 @@ server.use(cors()); // give access
 // get all environment variable you need
 require('dotenv').config();
 const PORT = process.env.PORT || 3000;
+const GEOCODE_API_KEY = process.env.GEOCODE_API_KEY;
+const DARKSKY_API_KEY = process.env.DARKSKY_API_KEY;
+
 
 // Make the app listening
 server.listen(PORT, () => console.log('Listening at port 3000'));
@@ -29,87 +34,74 @@ server.get('/', (request, response) => {
     "latitude": "47.606210",
     "longitude": "-122.332071"
   }
-  */
- 
- function Location(city, locationData){
-     this.formatted_query = locationData[0].display_name;
-     this.latitude = locationData[0].lat;
+*/
+
+
+server.get('/location', locationHandler);
+
+function Location(city, locationData) {
+    this.formatted_query = locationData[0].display_name;
+    this.latitude = locationData[0].lat;
     this.longitude = locationData[0].lon;
     this.search_query = city;
 }
 
+function locationHandler(request, response) {
+    // Read the city from the user (request) and respond
+    let city = request.query['city'];
+    getLocationData(city)
+        .then((data) => {
+            response.status(200).send(data);
+        });
+}
+function getLocationData(city) {
+    const url = `https://us1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&q=${city}&format=json&limit=1`;
+
+    // Superagent
+    return superagent.get(url)
+        .then((data) => {
+            let location = new Location(city, data.body);
+            return location;
+        });
+}
 
 
 
+server.get('/weather', weatherHandler);
 
-//=============================================================
-const DaysWeather = function(forecast,time){
-    this.forecast = forecast;
-    console.log(this.forecast)
-    this.time = new Date(time * 1000).toDateString();
-};
-  //=================================================================
-  // Function for getting all the daily weather
-function getDailyWeather(weatherData){
-        let dailyWeather = [];
-        let weatherLength = weatherData.daily.data.length;
-    console.log(weatherLength)
-    for (let i = 0; i < weatherLength; i++) {
-          let day = new DaysWeather(weatherData.daily.data[i].summary, weatherData.daily.data[i].time);
-          dailyWeather.push(day);
-        }
-        return dailyWeather;
-      }
+function Weather(day) {
+    this.time = new Date(day.time * 1000).toDateString();
+    this.forecast = day.summary;
+}
 
-    
-    server.get('/location', (request, response) => {
-        // Read the city from the user (request)
-    // find the city in geo.json
-    
-    const locationData = require('./data/geo.json');
-    let location = new Location("lynwood", locationData);
-    response.status(200).send(location);
+function weatherHandler(request, response) {
+    let lat = request.query['latitude'];
+    let lng = request.query['longitude'];
+    getWeatherData(lat, lng)
+        .then((data) => {
+            response.status(200).send(data);
+        });
+
+}
+
+function getWeatherData(lat, lng) {
+    const url = `https://api.darksky.net/forecast/${DARKSKY_API_KEY}/${lat},${lng}`;
+    return superagent.get(url)
+        .then((weatherData) => {
+            console.log(weatherData.body.daily.data);
+            let weather = weatherData.body.daily.data.map((day) => new Weather(day));
+            return weather;
+        });
+}
+
+
+
+server.use('*', (request, response) => {
+    response.status(404).send('Sorry, not found');
+});
+
+server.use((error, request, response) => {
+    response.status(500).send(error);
 });
 
 
-
-
-
-//==============================================================
-
-
-
-server.get('/weather', (request, response) => {
-    //check for json file
-    let weatherData = require('./data/darksky.json');
-    let weather = getDailyWeather(weatherData);
-    console.log(weather)
-      response.status(200).send(weather);
-    });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    server.use('*', (request, response) => {
-        response.status(404).send('Sorry, not found');
-    });
-    
-    server.use((error, request, response) => {
-        response.status(500).send(error);
-    });
-    
-    
-    
