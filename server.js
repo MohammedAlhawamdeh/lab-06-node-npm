@@ -1,44 +1,27 @@
 'use strict';
-// Express
 const express = require('express');
-
-const superagent = require('superagent');
-
-// initialize a server
+const superagent = require('superagent')
 const server = express();
 
-
-// Cross Origin Resource Sharing
 const cors = require('cors');
-server.use(cors()); // give access
+server.use(cors());
 
-// get all environment variable you need
 require('dotenv').config();
+
 const PORT = process.env.PORT || 3000;
 const GEOCODE_API_KEY = process.env.GEOCODE_API_KEY;
 const DARKSKY_API_KEY = process.env.DARKSKY_API_KEY;
-const EVENTFUL_APP_KEY = process.env.EVENTFUL_APP_KEY;
+const EVENTFUL_API_KEY = process.env.EVENTFUL_APP_KEY;
 
-
-// Make the app listening
-server.listen(PORT, () => console.log('Listening at port 3000'));
-
-
+server.listen(PORT, () => {
+    console.log('its work');
+})
 
 server.get('/', (request, response) => {
-    response.status(200).send('App is working CLAAAAASS');
+    response.status(200).send('Okay its found');
 });
-
-/* {
-    "search_query": "lynwood",
-    "formatted_query": "lynood,... ,WA, USA",
-    "latitude": "47.606210",
-    "longitude": "-122.332071"
-}
-*/
-
-
-server.get('/location', locationHandler);
+// ///////////////////////////
+server.get('/location', locationRndering);
 
 function Location(city, locationData) {
     this.formatted_query = locationData[0].display_name;
@@ -47,90 +30,89 @@ function Location(city, locationData) {
     this.search_query = city;
 }
 
-
-function locationHandler(request, response) {
-    // Read the city from the user (request) and respond
+function locationRndering(request, response) {
     let city = request.query['city'];
     getLocationData(city)
-    .then((data) => {
-        response.status(200).send(data);
-    });
+        .then((data) => {
+            response.status(200).send(data);
+        });
 }
 function getLocationData(city) {
-    const url = `https://us1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&q=${city}&format=json&limit=1`;
-    
-    // Superagent
-    return superagent.get(url)
-    .then((data) => {
-        let location = new Location(city, data.body);
-        return location;
-    });
+    const locationUrl = `https://us1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&q=${city}&format=json&limit=1`;
+    return superagent.get(locationUrl)
+        .then((data) => {
+            // console.log(data.body)
+            const location = new Location(city, data.body);
+            return location;
+        });
 }
-
-
-
-server.get('/weather', weatherHandler);
+// //////////////////////
+server.get('/weather', weatherrenderring);
 
 function Weather(day) {
-    this.time = new Date(day.time * 1000).toDateString();
+    this.time = new Date(day.time * 1000).toDateString()
     this.forecast = day.summary;
 }
-
-
-
-function weatherHandler(request, response) {
+function weatherrenderring(request,response){
     let lat = request.query['latitude'];
     let lng = request.query['longitude'];
-    getWeatherData(lat, lng)
-    .then((data) => {
+    getWeatherData(lat,lng)
+    .then((data) =>{
         response.status(200).send(data);
     });
-    
+    }
+function getWeatherData(lat,lng){
+    const weatherUrl = `https://api.darksky.net/forecast/${DARKSKY_API_KEY}/${lat},${lng}`;
+    return superagent.get(weatherUrl)
+    .then((weatherData) =>{
+        let weather = weatherData.body.daily.data.map((day) => new Weather(day));
+        return weather;
+    });
+}
+// ///////////////////////////
+
+//     {
+    //       "link": "http://seattle.eventful.com/events/seattle-code-101-explore-software-development-/E0-001-126675997-3?utm_source=apis&utm_medium=apim&utm_campaign=apic",
+    //       "name": "Seattle Code 101: Explore Software Development",
+    //       "event_date": "Sat Dec 7 2019",
+    //       "summary": "Thinking about a new career in software development? Start here! In this one-day workshop, you&#39;ll get a taste of a day in the life of a software developer. Code 101 helps you learn what it’s like to be a software developer through a day-long immersive course for beginners that focuses on front-end web development technologies. "
+    //     },
+    server.get('/events', eventfulRndering);
+
+function Eventful(eventData) {
+    this.link  = eventData[0].url;                                                                                                                                               
+    this.name = eventData[0].title;
+    this.event_date = eventData[0].start_time;
+    this.summary = eventData[0].description;
+}
+
+function eventfulRndering(request, response) {
+    let city = request.query.formatted_query;
+    getEventfulData(city)
+        .then((data) => {
+            response.status(200).send(data);
+        });
+}
+function getEventfulData(city) {
+    const eventfulUrl = `http://api.eventful.com/json/events/search?app_key=${EVENTFUL_API_KEY}&location=${city}`;
+    // console.log(eventfulUrl)
+    return superagent.get(eventfulUrl)
+    .then((eventfulData) => {
+        let jsonData = JSON.parse(eventfulData.text).events.event;
+        console.log(jsonData);
+        const eventful = jsonData.map((day) => new Eventful(jsonData));
+
+            return eventful;
+        });
 }
 
 
-function getWeatherData(lat, lng) {
-    const url = `https://api.darksky.net/forecast/${DARKSKY_API_KEY}/${lat},${lng}`;
-    return superagent.get(url)
-    .then((weatherData) => {
-        console.log(weatherData.body.daily.data);
-        let weather = weatherData.body.daily.data.map((day) => new Weather(day));
-            return weather;
-        });
-    }
-    
-
-
+// http://api.eventful.com/json/events/search?app_key=PNCrgkt3XvWJFfQm&location=${amman}/limit=1
 
 server.use('*', (request, response) => {
-    response.status(404).send('Sorry, not found');
+    response.status(404).send('its not found ')
 });
-
+// //////////////////////////////////
 server.use((error, request, response) => {
-    response.status(500).send(error);
+    response.status(500).send("Sorry, something went wrong");
 });
-
-
-
-
-const Event = function(link, name, event_date, summary) {
-    this.link = link;
-    this.name = name;
-    this.event_date = event_date;
-    this.summary = summary;
-  };
-
-  app.get('/events/', (request, response) => {
-      
-      function getEventData(lat, lng) {
-      let city = formatted_query['city'];
-      let url = `http://api.eventful.com/json/events/search?app_key=${EVENTFUL_APP_KEY}&location=formatted_query${city}`;
-  
-      return superagent.get(url)
-        .then((eventData) => {
-            console.log(eventData.body.daily.data);
-            let event = eventData.body.daily.data.map((city) => new Event(city));
-                return event;
-            });
-        }
-      
