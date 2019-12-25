@@ -1,115 +1,118 @@
 'use strict';
-// Express
 const express = require('express');
-
-// initialize a server
+const superagent = require('superagent')
 const server = express();
 
-
-// Cross Origin Resource Sharing
 const cors = require('cors');
-server.use(cors()); // give access
+server.use(cors());
 
-// get all environment variable you need
 require('dotenv').config();
+
 const PORT = process.env.PORT || 3000;
+const GEOCODE_API_KEY = process.env.GEOCODE_API_KEY;
+const DARKSKY_API_KEY = process.env.DARKSKY_API_KEY;
+const EVENTFUL_API_KEY = process.env.EVENTFUL_APP_KEY;
 
-// Make the app listening
-server.listen(PORT, () => console.log('Listening at port 3000'));
-
-
+server.listen(PORT, () => {
+    console.log('its work');
+})
 
 server.get('/', (request, response) => {
-    response.status(200).send('App is working CLAAAAASS');
+    response.status(200).send('Okay its found');
 });
+// ///////////////////////////
+server.get('/location', locationRndering);
 
-/* {
-    "search_query": "lynwood",
-    "formatted_query": "lynood,... ,WA, USA",
-    "latitude": "47.606210",
-    "longitude": "-122.332071"
-  }
-  */
- 
- function Location(city, locationData){
-     this.formatted_query = locationData[0].display_name;
-     this.latitude = locationData[0].lat;
+function Location(city, locationData) {
+    this.formatted_query = locationData[0].display_name;
+    this.latitude = locationData[0].lat;
     this.longitude = locationData[0].lon;
     this.search_query = city;
 }
 
+function locationRndering(request, response) {
+    let city = request.query['city'];
+    getLocationData(city)
+        .then((data) => {
+            response.status(200).send(data);
+        });
+}
+function getLocationData(city) {
+    const locationUrl = `https://us1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&q=${city}&format=json&limit=1`;
+    return superagent.get(locationUrl)
+        .then((data) => {
+            // console.log(data.body)
+            const location = new Location(city, data.body);
+            return location;
+        });
+}
+// //////////////////////
+server.get('/weather', weatherrenderring);
+
+function Weather(day) {
+    this.time = new Date(day.time * 1000).toDateString()
+    this.forecast = day.summary;
+}
+function weatherrenderring(request,response){
+    let lat = request.query['latitude'];
+    let lng = request.query['longitude'];
+    getWeatherData(lat,lng)
+    .then((data) =>{
+        response.status(200).send(data);
+    });
+    }
+function getWeatherData(lat,lng){
+    const weatherUrl = `https://api.darksky.net/forecast/${DARKSKY_API_KEY}/${lat},${lng}`;
+    return superagent.get(weatherUrl)
+    .then((weatherData) =>{
+        let weather = weatherData.body.daily.data.map((day) => new Weather(day));
+        return weather;
+    });
+}
+// ///////////////////////////
+
+//     {
+    //       "link": "http://seattle.eventful.com/events/seattle-code-101-explore-software-development-/E0-001-126675997-3?utm_source=apis&utm_medium=apim&utm_campaign=apic",
+    //       "name": "Seattle Code 101: Explore Software Development",
+    //       "event_date": "Sat Dec 7 2019",
+    //       "summary": "Thinking about a new career in software development? Start here! In this one-day workshop, you&#39;ll get a taste of a day in the life of a software developer. Code 101 helps you learn what it’s like to be a software developer through a day-long immersive course for beginners that focuses on front-end web development technologies. "
+    //     },
+    server.get('/events', eventfulRndering);
+
+function Eventful(eventData) {
+    this.link  = eventData[0].url;                                                                                                                                               
+    this.name = eventData[0].title;
+    this.event_date = eventData[0].start_time;
+    this.summary = eventData[0].description;
+}
+
+function eventfulRndering(request, response) {
+    let city = request.query.formatted_query;
+    getEventfulData(city)
+        .then((data) => {
+            response.status(200).send(data);
+        });
+}
+function getEventfulData(city) {
+    const eventfulUrl = `http://api.eventful.com/json/events/search?app_key=${EVENTFUL_API_KEY}&location=${city}`;
+    // console.log(eventfulUrl)
+    return superagent.get(eventfulUrl)
+    .then((eventfulData) => {
+        let jsonData = JSON.parse(eventfulData.text).events.event;
+        console.log(jsonData);
+        const eventful = jsonData.map((day) => new Eventful(jsonData));
+
+            return eventful;
+        });
+}
 
 
+// http://api.eventful.com/json/events/search?app_key=PNCrgkt3XvWJFfQm&location=${amman}/limit=1
 
-
-//=============================================================
-const DaysWeather = function(forecast,time){
-    this.forecast = forecast;
-    console.log(this.forecast)
-    this.time = new Date(time * 1000).toDateString();
-};
-  //=================================================================
-  // Function for getting all the daily weather
-function getDailyWeather(weatherData){
-        let dailyWeather = [];
-        let weatherLength = weatherData.daily.data.length;
-    console.log(weatherLength)
-    for (let i = 0; i < weatherLength; i++) {
-          let day = new DaysWeather(weatherData.daily.data[i].summary, weatherData.daily.data[i].time);
-          dailyWeather.push(day);
-        }
-        return dailyWeather;
-      }
-
-    
-    server.get('/location', (request, response) => {
-        // Read the city from the user (request)
-    // find the city in geo.json
-    
-    const locationData = require('./data/geo.json');
-    let location = new Location("lynwood", locationData);
-    response.status(200).send(location);
+server.use('*', (request, response) => {
+    response.status(404).send('its not found ')
 });
-
-
-
-
-
-//==============================================================
-
-
-
-server.get('/weather', (request, response) => {
-    //check for json file
-    let weatherData = require('./data/darksky.json');
-    let weather = getDailyWeather(weatherData);
-    console.log(weather)
-      response.status(200).send(weather);
-    });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    server.use('*', (request, response) => {
-        response.status(404).send('Sorry, not found');
-    });
-    
-    server.use((error, request, response) => {
-        response.status(500).send(error);
-    });
-    
-    
-    
+// //////////////////////////////////
+server.use((error, request, response) => {
+    response.status(500).send("Sorry, something went wrong");
+});
