@@ -2,6 +2,18 @@
 const express = require('express');
 const superagent = require('superagent')
 const server = express();
+const pg = require('pg');
+const client = new pg.Client(process.env.DATABASE_URL);
+client.on('error', error => {throw error;})
+
+client.connect()
+.then ( () => {
+    server.listen(PORT, () => {
+        console.log('database is connected');
+  })  
+//   .catch(error, console.log(error));
+})
+
 
 const cors = require('cors');
 server.use(cors());
@@ -13,13 +25,40 @@ const GEOCODE_API_KEY = process.env.GEOCODE_API_KEY;
 const DARKSKY_API_KEY = process.env.DARKSKY_API_KEY;
 const EVENTFUL_API_KEY = process.env.EVENTFUL_APP_KEY;
 
-server.listen(PORT, () => {
-    console.log('its work');
-})
+// server.listen(PORT, () => {
+//     console.log('its work');
+// })
+
 
 server.get('/', (request, response) => {
     response.status(200).send('Okay its found');
 });
+server.get('/people', (request, response) => {
+    let sql=`SELECT * FROM people`;
+    client.query(sql)
+    .then((data) =>{
+        console.log(data);
+        response.status(200).send('data');
+    });
+});
+
+server.get('/add', (request, response) => {
+    let search_query = request.query['first'];
+    let formatted_query = request.query['last'];
+    let latitude = request.query['latitude'];
+    let longitude = request.query['longitude']
+   
+    // console.log(first, last);
+  
+    let sql = `INSERT INTO people(first_name, last_name) VALUES ($1, $2) RETURNING *`;
+    let queryData = [first, last];
+    client.query(sql,queryData)
+    .then((data)=>{
+      response.status(200).send(data);
+    });
+  
+  });
+  
 // ///////////////////////////
 server.get('/location', locationRndering);
 
@@ -35,7 +74,8 @@ function locationRndering(request, response) {
     getLocationData(city)
         .then((data) => {
             response.status(200).send(data);
-        });
+        })
+        // .catch(error, console.log(error));
 }
 function getLocationData(city) {
     const locationUrl = `https://us1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&q=${city}&format=json&limit=1`;
@@ -44,7 +84,8 @@ function getLocationData(city) {
             // console.log(data.body)
             const location = new Location(city, data.body);
             return location;
-        });
+        })
+        // .catch(error, console.log(error));
 }
 // //////////////////////
 server.get('/weather', weatherrenderring);
@@ -59,7 +100,8 @@ function weatherrenderring(request,response){
     getWeatherData(lat,lng)
     .then((data) =>{
         response.status(200).send(data);
-    });
+    })
+    // .catch(error, console.log(error));
     }
 function getWeatherData(lat,lng){
     const weatherUrl = `https://api.darksky.net/forecast/${DARKSKY_API_KEY}/${lat},${lng}`;
@@ -67,7 +109,8 @@ function getWeatherData(lat,lng){
     .then((weatherData) =>{
         let weather = weatherData.body.daily.data.map((day) => new Weather(day));
         return weather;
-    });
+    })
+    // .catch(error, console.log(error));
 }
 // ///////////////////////////
 
@@ -91,7 +134,8 @@ function eventfulRndering(request, response) {
     getEventfulData(city)
         .then((data) => {
             response.status(200).send(data);
-        });
+        })
+        // .catch(error, console.log(error));
 }
 function getEventfulData(city) {
     const eventfulUrl = `http://api.eventful.com/json/events/search?app_key=${EVENTFUL_API_KEY}&location=${city}`;
@@ -103,7 +147,8 @@ function getEventfulData(city) {
         const eventful = jsonData.map((day) => new Eventful(jsonData));
 
             return eventful;
-        });
+        })
+        // .catch(error, console.log(error));
 }
 
 
