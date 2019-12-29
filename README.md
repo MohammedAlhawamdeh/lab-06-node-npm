@@ -1,10 +1,18 @@
 # lab-06-node-npm
-Number and name of feature: ________________________________
 
-Estimate of time needed to complete: _____
+Overview:
+ this is to a complete  project to run data from APIS, JSON files and store some of it in the local DataBase.All done within the CityExplorer Application provided by the instructor.
 
-Start time: _____
 
-Finish time: _____
 
-Actual time needed to complete: _____
+Number and name of feature: 5 Features- Adding LocationIQ, DARKSKY, YELP , Movies and Store LocationIq in local DB
+
+Estimate of time needed to complete: 5 days with their nights :)
+
+Start time: Sunday
+
+Finish time: Saturday
+
+Actual time needed to complete: Almost 15 hours
+
+SideNote: Some collaboration occured from: Qosay , Abed ,Ayman and Mohammed Alsbol.
