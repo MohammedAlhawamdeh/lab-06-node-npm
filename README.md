@@ -15,4 +15,4 @@ Finish time: Saturday
 
 Actual time needed to complete: Almost 15 hours
 
-SideNote: Some collaboration occured from: Qosay , Abed ,Ayman and Mohammed Alsbol.
+SideNote: Some collaboration occured from: Qusay , Abed ,Ayman and Mohammed Alsbol. also my lab 9 partner Ahmad K.

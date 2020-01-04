@@ -2,10 +2,10 @@
 
 // step 1 get all the libraries
 //==============================
+require('dotenv').config();
 const express = require('express');
 const superagent = require('superagent');
 const cors = require('cors');
-require('dotenv').config();
 const pg = require('pg');
 const client = new pg.Client();
 const server = express();// initialize a server
